@@ -1,135 +1,5 @@
 package packege;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.LocalDate;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.RateLimiter;
-import lombok.*;
-
-@NoArgsConstructor
-public class CrptApi {
-    @Getter
-    private AtomicReference<TimeUnit> timeUnit = new AtomicReference<>();
-    @Getter
-    private AtomicInteger requestLimit = new AtomicInteger();
-    private RateLimiter limiter;
-    public CrptApi(TimeUnit timeUnit, int requestLimit) {
-        this.timeUnit.set(timeUnit);
-        this.requestLimit.set(requestLimit);
-        limiter = RateLimiter.create((double) requestLimit, 1, timeUnit);
-    }
-
-    public void saveDoc (JSOnDocument document, String signature)  {
-        limiter.acquire();
-
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            StringWriter writer = new StringWriter();
-
-            mapper.writeValue(writer, document);
-            System.out.println("document: " + "\n" + writer.toString());
-            postJsonDocument(writer.toString());
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-
-    }
-
-    private void postJsonDocument(String value){
-        String url = "https://ismp.crpt.ru/api/v3/lk/documents/create";
-        try {
-            HttpClient client = HttpClient.newHttpClient();
-
-            HttpRequest request = HttpRequest.newBuilder(new URI(url))
-                    .uri(URI.create(url))
-                    .POST(HttpRequest.BodyPublishers.ofString(value))
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void setTimeUnit(TimeUnit timeUnit) {
-        this.timeUnit.set(timeUnit);
-    }
-
-    public void setRequestLimit(int requestLimit) {
-        this.requestLimit.set(requestLimit);
-    }
-
-    @Data
-    @AllArgsConstructor
-    @JsonAutoDetect
-    static class JSOnDocument{
-        private Description description;
-        private String doc_id;
-        private String doc_status;
-        private DocType doc_type;
-        private boolean importRequest;
-        private String owner_inn;
-        private String participant_inn;
-        private Date production_date;
-        private String production_type;
-        private List<Products> products;
-        private Date reg_date;
-        private String reg_number;
-    }
-
-    @Data
-    @AllArgsConstructor
-    @JsonAutoDetect
-    static class Products{
-        private String certificate_document;
-        private Date certificate_document_date;
-        private String certificate_document_number;
-        private String owner_inn;
-        private String producer_inn;
-        private Date production_date;
-        private String tnved_code;
-        private String uit_code;
-        private String uitu_code;
-    }
-
-    @AllArgsConstructor
-    @JsonAutoDetect
-    static class Description{
-        @Setter
-        @Getter
-        private String participantInn;
-    }
-    @JsonAutoDetect
-    static enum DocType{
-        LP_INTRODUCE_GOODS
-    }
-
-}
-
-
-
-
-
 /*
 Необходимо реализовать на языке Java (можно использовать 17 версию) класс для работы с API Честного знака.
 Класс должен быть thread-safe и поддерживать ограничение на количество запросов к API.
@@ -191,3 +61,138 @@ https://ismp.crpt.ru/api/v3/lk/documents/create
 реальный API не должен интересовать.
 
  */
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.RateLimiter;
+import lombok.*;
+
+@NoArgsConstructor
+public class CrptApi {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final StringWriter WRITER = new StringWriter();
+    private static final String URI_EXTERNAL_SERVICE = "https://ismp.crpt.ru/api/v3/lk/documents/create";
+    private final HttpClient client = HttpClient.newHttpClient();
+    @Getter
+    private AtomicReference<TimeUnit> timeUnit = new AtomicReference<>();
+    @Getter
+    private AtomicInteger requestLimit = new AtomicInteger();
+    private RateLimiter limiter;
+
+    public CrptApi(TimeUnit timeUnit, int requestLimit) {
+        this.timeUnit.set(timeUnit);
+        this.requestLimit.set(requestLimit);
+        limiter = RateLimiter.create(requestLimit, 1, timeUnit);
+    }
+
+    /**
+     * Выполнение POST-запроса на создание документа
+     *
+     * @param signature подпись
+     * @param document документ
+     * @return void
+     */
+    public HttpResponse<String> saveDoc(@NonNull final JSONDocument document,
+                                        @NonNull final String signature) {
+        limiter.acquire();
+        try {
+            MAPPER.writeValue(WRITER, document);
+            HttpRequest request = HttpRequest.newBuilder(URI.create(URI_EXTERNAL_SERVICE))
+                    .POST(HttpRequest.BodyPublishers.ofString(WRITER.toString()))
+                    .build();
+
+            return client.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void setTimeUnit(TimeUnit timeUnit) {
+        this.timeUnit.set(timeUnit);
+    }
+
+    public void setRequestLimit(int requestLimit) {
+        this.requestLimit.set(requestLimit);
+    }
+}
+
+@Data
+@AllArgsConstructor
+@JsonAutoDetect
+class JSONDocument {
+    @JsonProperty("description")
+    private Description description;
+    @JsonProperty("doc_id")
+    private String docId;
+    @JsonProperty("doc_status")
+    private String docStatus;
+    @JsonProperty("doc_type")
+    private DocType docType;
+    @JsonProperty("importRequest")
+    private boolean importRequest;
+    @JsonProperty("owner_inn")
+    private String ownerInn;
+    @JsonProperty("participant_inn")
+    private String participantInn;
+    @JsonProperty("production_date")
+    private Date productionDate;
+    @JsonProperty("production_type")
+    private String productionType;
+    @JsonProperty("products")
+    private List<Products> products;
+    @JsonProperty("reg_date")
+    private Date regDate;
+    @JsonProperty("reg_number")
+    private String regNumber;
+}
+
+@Data
+@AllArgsConstructor
+@JsonAutoDetect
+class Products {
+    @JsonProperty("certificate_document")
+    private String certificateDocument;
+    @JsonProperty("certificate_document_date")
+    private Date certificateDocumentDate;
+    @JsonProperty("certificate_document_number")
+    private String certificateDocumentNumber;
+    @JsonProperty("owner_inn")
+    private String ownerInn;
+    @JsonProperty("producer_inn")
+    private String producerInn;
+    @JsonProperty("production_date")
+    private Date productionDate;
+    @JsonProperty("tnved_code")
+    private String tnvedCode;
+    @JsonProperty("uit_code")
+    private String uitCode;
+    @JsonProperty("uitu_code")
+    private String uituCode;
+}
+
+@AllArgsConstructor
+@JsonAutoDetect
+class Description {
+    @Setter
+    @Getter
+    @JsonProperty("participantInn")
+    private String participantInn;
+}
+@JsonAutoDetect
+enum DocType {
+    LP_INTRODUCE_GOODS
+}
