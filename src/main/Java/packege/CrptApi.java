@@ -84,7 +84,6 @@ import lombok.*;
 @NoArgsConstructor
 public class CrptApi {
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final StringWriter WRITER = new StringWriter();
     private static final String URI_EXTERNAL_SERVICE = "https://ismp.crpt.ru/api/v3/lk/documents/create";
     private final HttpClient client = HttpClient.newHttpClient();
     @Getter
@@ -109,10 +108,11 @@ public class CrptApi {
     public HttpResponse<String> saveDoc(@NonNull final JSONDocument document,
                                         @NonNull final String signature) {
         limiter.acquire();
+        StringWriter writer = new StringWriter();
         try {
-            MAPPER.writeValue(WRITER, document);
+            MAPPER.writeValue(writer, document);
             HttpRequest request = HttpRequest.newBuilder(URI.create(URI_EXTERNAL_SERVICE))
-                    .POST(HttpRequest.BodyPublishers.ofString(WRITER.toString()))
+                    .POST(HttpRequest.BodyPublishers.ofString(writer.toString()))
                     .build();
 
             return client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -132,6 +132,7 @@ public class CrptApi {
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 @JsonAutoDetect
 class JSONDocument {
     @JsonProperty("description")
