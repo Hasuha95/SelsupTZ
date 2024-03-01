@@ -108,7 +108,7 @@ public class CrptApi {
     public HttpResponse<String> saveDoc(@NonNull final JSONDocument document,
                                         @NonNull final String signature) {
         limiter.acquire();
-        StringWriter writer = new StringWriter();
+        final StringWriter writer = new StringWriter();
         try {
             MAPPER.writeValue(writer, document);
             HttpRequest request = HttpRequest.newBuilder(URI.create(URI_EXTERNAL_SERVICE))
