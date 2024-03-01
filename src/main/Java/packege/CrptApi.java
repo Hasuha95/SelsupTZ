@@ -1,5 +1,6 @@
 package packege;
 
+
 /*
 Необходимо реализовать на языке Java (можно использовать 17 версию) класс для работы с API Честного знака.
 Класс должен быть thread-safe и поддерживать ограничение на количество запросов к API.
@@ -8,7 +9,6 @@ package packege;
 public CrptApi(TimeUnit timeUnit, int requestLimit)
 timeUnit – указывает промежуток времени – секунда, минута и пр.
 requestLimit – положительное значение, которое определяет максимальное количество запросов в этом промежутке времени.
-
 При превышении лимита запрос вызов должен блокироваться, чтобы не превысить максимальное количество запросов к API
 и продолжить выполнение, без выбрасывания исключения, когда ограничение на количество вызов API не будет превышено
 в результате этого вызова. В любой ситуации превышать лимит на количество запросов запрещено для метода.
@@ -87,9 +87,9 @@ public class CrptApi {
     private static final String URI_EXTERNAL_SERVICE = "https://ismp.crpt.ru/api/v3/lk/documents/create";
     private final HttpClient client = HttpClient.newHttpClient();
     @Getter
-    private AtomicReference<TimeUnit> timeUnit = new AtomicReference<>();
+    private final AtomicReference<TimeUnit> timeUnit = new AtomicReference<>();
     @Getter
-    private AtomicInteger requestLimit = new AtomicInteger();
+    private final AtomicInteger requestLimit = new AtomicInteger();
     private RateLimiter limiter;
 
     public CrptApi(TimeUnit timeUnit, int requestLimit) {
@@ -119,14 +119,6 @@ public class CrptApi {
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public void setTimeUnit(TimeUnit timeUnit) {
-        this.timeUnit.set(timeUnit);
-    }
-
-    public void setRequestLimit(int requestLimit) {
-        this.requestLimit.set(requestLimit);
     }
 }
 
