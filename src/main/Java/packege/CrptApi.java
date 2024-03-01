@@ -87,9 +87,9 @@ public class CrptApi {
     private static final String URI_EXTERNAL_SERVICE = "https://ismp.crpt.ru/api/v3/lk/documents/create";
     private final HttpClient client = HttpClient.newHttpClient();
     @Getter
-    private AtomicReference<TimeUnit> timeUnit = new AtomicReference<>();
+    private final AtomicReference<TimeUnit> timeUnit = new AtomicReference<>();
     @Getter
-    private AtomicInteger requestLimit = new AtomicInteger();
+    private final AtomicInteger requestLimit = new AtomicInteger();
     private RateLimiter limiter;
 
     public CrptApi(TimeUnit timeUnit, int requestLimit) {
