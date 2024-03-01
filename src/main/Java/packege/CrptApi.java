@@ -120,14 +120,6 @@ public class CrptApi {
             throw new RuntimeException(e);
         }
     }
-
-    public void setTimeUnit(TimeUnit timeUnit) {
-        this.timeUnit.set(timeUnit);
-    }
-
-    public void setRequestLimit(int requestLimit) {
-        this.requestLimit.set(requestLimit);
-    }
 }
 
 @Data
